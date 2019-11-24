@@ -105,8 +105,6 @@ class kpustockanalysis:
                 us_stock_data = us_stock_data.sort_values(by='date', axis=0)
                 us_stock_data.index = range(1, len(us_stock_data) + 1)
 
-                print(us_stock_data['volume'])
-
                 return us_stock_data
             # 2.1.3. 중국
             elif country is "CHINA" or country is 30:
@@ -161,7 +159,7 @@ class kpustockanalysis:
             # 2.3.2. 미국
             elif country is "US" or country is 20:
                 # 2.3.2.1. 파일에서 데이터를 가져옴
-                filepath = kwargs['filepath'] + 'stock_data.' + kwargs['filetype']
+                filepath = kwargs['filepath']
                 if kwargs['filetype'] is 'xlsx':
                     us_stock_data = pd.read_excel(filepath).set_index("Unnamed: 0")
                     us_stock_data.index.names = ['']
@@ -194,11 +192,15 @@ class kpustockanalysis:
         # 3.2. 미국
         elif country is "US" or country is 20:
             # 3.2.1. 로컬데이터베이스의 모든 데이터를 가져옴
-            query = session.execute("SELECT * FROM stock")
-            columns = [column[0] for column in query.description]
-            db_data = pd.DataFrame.from_records(data=query.fetchall(), columns=columns)
-            db_data = db_data.set_index('index')
-            db_data.index.names = ['']
+            try:
+                query = session.execute("SELECT * FROM stock")
+                columns = [column[0] for column in query.description]
+                db_data = pd.DataFrame.from_records(data=query.fetchall(), columns=columns)
+                db_data = db_data.set_index('index')
+                db_data.index.names = ['']
+            except:
+                print("error")
+                return -1
 
             # 3.2.2. 두 데이터의 row 를 비교하여 차이가 있으면 db 갱신
             diff_count = abs(len(df) - len(db_data))

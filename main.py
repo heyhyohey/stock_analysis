@@ -4,20 +4,27 @@ from datetime import datetime
 import sqlite3
 import os
 
+pd.set_option('display.width', 1000)
+pd.set_option('display.max_colwidth', 10)
+
 # startdate, enddate 할당
 now = datetime.now()
 startdate = '2010-01-01'
 enddate = str(now.year) + '-' + str(now.month) + '-' + str(now.day)
 
 # ticker를 db에서 읽어옴
-conn = sqlite3.connect('stock_data.db')
-query = conn.execute("SELECT * FROM code")
-columns = [column[0] for column in query.description]
-ticker_list = pd.DataFrame.from_records(data=query.fetchall(), columns=columns)
-conn.close()
-ticker_list = ticker_list.set_index('index')
-ticker_list.index.names = ['']
+if os.path.isfile('stock_data.db'):
+    conn = sqlite3.connect('stock_data.db')
+    query = conn.execute("SELECT * FROM code")
+    columns = [column[0] for column in query.description]
+    ticker_list = pd.DataFrame.from_records(data=query.fetchall(), columns=columns)
+    conn.close()
+    ticker_list = ticker_list.set_index('index')
+    ticker_list.index.names = ['']
+else:
+    ticker_list = None
 
+us_stock_data = None
 flag = 201781580076
 
 # 미국 주식 데이터 분석 프로그램 menu 출력
@@ -37,14 +44,23 @@ while flag != '0':
         print(us_stock_data)
     elif flag == '3':
         # 3. xlsx 파일로 저장
+        if us_stock_data is None:
+            print("주가 데이터가 존재하지 않습니다.")
+            continue
         us_stock_data.to_excel('stock_data.xlsx')
         print("stock_data.xlsx 파일로 저장되었습니다.")
     elif flag == '4':
         # 4. csv 파일로 저장
+        if us_stock_data is None:
+            print("주가 데이터가 존재하지 않습니다.")
+            continue
         us_stock_data.to_csv('stock_data.csv')
         print("stock_data.csv 파일로 저장되었습니다.")
     elif flag == '5':
         # 5. DB 파일로 저장
+        if us_stock_data is None:
+            print("주가 데이터가 존재하지 않습니다.")
+            continue
         if os.path.isfile('stock_data.db'):
             conn = sqlite3.connect('stock_data.db')
             update_count = kpustockanalysis.db_refresh(us_stock_data, conn, "US", ticker_list, startdate, enddate)
@@ -60,16 +76,25 @@ while flag != '0':
             print("stock_data.db 파일로 저장되었습니다.")
     elif flag == '6':
         # 6. xlsx 파일 읽어오기
-        us_stock_data = kpustockanalysis.get_dayprice('localfile', 'US', ticker_list, startdate='2010-01-01', enddate=now, filepath='', filetype='xlsx')
+        if not os.path.isfile('stock_data.xlsx'):
+            print("stock_data.xlsx가 존재하지 않습니다.")
+            continue
+        us_stock_data = kpustockanalysis.get_dayprice('localfile', 'US', ticker_list, startdate='2010-01-01', enddate=now, filepath='stock_data.xlsx', filetype='xlsx')
         us_stock_data.index.names = ['']
         print(us_stock_data)
     elif flag == '7':
         # 7. csv 파일 읽어오기
-        us_stock_data = kpustockanalysis.get_dayprice('localfile', 'US', ticker_list, startdate='2010-01-01', enddate=now, filepath='', filetype='csv')
+        if not os.path.isfile('stock_data.csv'):
+            print("stock_data.csv가 존재하지 않습니다.")
+            continue
+        us_stock_data = kpustockanalysis.get_dayprice('localfile', 'US', ticker_list, startdate='2010-01-01', enddate=now, filepath='stock_data.csv', filetype='csv')
         us_stock_data.index.names = ['']
         print(us_stock_data)
     elif flag == '8':
         # 8. DB 파일 읽어오기
+        if not os.path.isfile('stock_data.db'):
+            print("stock_data.db가 존재하지 않습니다.")
+            continue
         conn = sqlite3.connect("stock_data.db")
         us_stock_data = kpustockanalysis.get_dayprice('localdb', 'US', ticker_list, startdate='2010-01-01', enddate=now, dbms='sqlite3')
         conn.close()
